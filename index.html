@@ -129,8 +129,10 @@ p{margin:0 0 1.35em}
 .yk img{position:absolute;inset:0;width:100%;height:100%;
   animation:flicker 5.5s ease-in-out infinite}
 
-/* 吊り提灯（元データ）。紐は画面の上へ抜けていく */
-.hangs{position:absolute;inset:0 0 auto 0;height:290px;pointer-events:none;overflow:hidden}
+/* 吊り提灯（元データ）。紐は画面の上へ抜けていく。
+   overflow は切らない ── 切ると、文章の欄からはみ出した提灯の縁が
+   まっすぐ断ち落とされてしまう（PCで赤提灯の左が切れていた） */
+.hangs{position:absolute;inset:0 0 auto 0;height:290px;pointer-events:none}
 .hangs .h{position:absolute;transform-origin:50% 0;animation:sway 9s ease-in-out infinite}
 .hangs .h img{display:block;width:100%;height:auto}
 .hangs .h1{left:-2%;top:-38px;width:56px;animation-duration:10.4s}
@@ -140,6 +142,12 @@ p{margin:0 0 1.35em}
 @media (max-width:400px){
   .hangs .h1{width:48px} .hangs .h2{width:36px}
   .hangs .h3{width:23px} .hangs .h4{width:20px}
+}
+/* 広い画面では、文章の欄より外へ吊る。520pxの列に寄せると窮屈に見える */
+@media (min-width:760px){
+  .hangs{right:auto;left:50%;width:min(94vw,880px);transform:translateX(-50%)}
+  .hangs .h1{width:74px;top:-46px} .hangs .h2{width:56px;top:26px}
+  .hangs .h3{width:34px} .hangs .h4{width:29px}
 }
 
 @media (prefers-reduced-motion:reduce){
