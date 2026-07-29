@@ -138,7 +138,8 @@ p{margin:0 0 1.35em}
 .hangs .h4{right:26%;animation-duration:8.2s;animation-delay:-1.5s}
 
 @media (prefers-reduced-motion:reduce){
-  .band .walk,.walk>*,.hangs .h,.yokai .lamp{animation:none}
+  .band .walk,.walk>*,.hangs .h,.yokai .lamp,.tomoshibi{animation:none}
+  .tomoshibi{display:none}
 }
 
 /* ── 話の一覧 ── */
@@ -169,6 +170,13 @@ p{margin:0 0 1.35em}
 .card.read .lan-cap{fill:var(--aka-kuro)}
 .card.read .lan-hi{opacity:.85;animation:flicker 6s ease-in-out infinite}
 .card.read .mark svg{filter:drop-shadow(0 0 7px rgba(232,206,154,.45))}
+/* いま灯したばかりの提灯は、一度だけ強く光ってから落ち着く */
+.card.just .mark svg{animation:tomoshi 1.8s ease-out 1}
+@keyframes tomoshi{
+  0%{filter:drop-shadow(0 0 20px rgba(232,206,154,1))}
+  35%{filter:drop-shadow(0 0 13px rgba(232,206,154,.8))}
+  100%{filter:drop-shadow(0 0 7px rgba(232,206,154,.45))}
+}
 
 /* ── 灯りの地図 ──
    --map-ar は納品される絵図の縦横比に合わせる。
@@ -206,6 +214,23 @@ p{margin:0 0 1.35em}
 .map-s .pin .lb{color:var(--hi);font-size:11.5px}
 
 /* ── 話ページ ── */
+/* ── 「この場所に着いた」の演出 ──
+   提灯に火が入り、その明かりで文字が浮かび上がる。
+   全部で1秒未満に収める（読み始めを待たせない） */
+.tomoshibi{position:fixed;inset:0;z-index:20;pointer-events:none;
+  background:radial-gradient(58% 40% at 50% 58%,
+    rgba(232,206,154,.34), rgba(232,206,154,.12) 40%, transparent 72%);
+  animation:tomoru .8s ease-out forwards}
+@keyframes tomoru{
+  0%{opacity:0;transform:scale(.5)}
+  20%{opacity:1;transform:scale(1)}
+  46%{opacity:.72;transform:scale(1.06)}
+  100%{opacity:0;transform:scale(1.45)}
+}
+#st-gate.out{animation:kieru .24s ease forwards;pointer-events:none}
+@keyframes kieru{to{opacity:0;transform:translateY(-6px)}}
+@keyframes ukabu{from{opacity:0;transform:translateY(11px)}to{opacity:1;transform:none}}
+
 .sec{margin:44px 0 22px}
 .teaser{font-size:18px;line-height:2.3;letter-spacing:.08em;margin:0 0 38px}
 .teaser p{margin:0 0 1.4em}
@@ -723,9 +748,11 @@ const MARK = `<span class="mark"><svg width="15" height="24" viewBox="0 0 20 30"
   <rect class="lan-cap" x="6.6" y="22.4" width="6.8" height="2.4" rx="1"/>
 </svg></span>`;
 
+let lastRead = null;   /* 直前に灯した話。一覧に戻ったとき一度だけ強く光らせる */
+
 function renderList(){
   $("#list").innerHTML = STORIES.map(s=>`
-    <button class="card ${readSet.has(s.id)?'read':''}" onclick="go('#/s/${s.id}')">
+    <button class="card ${readSet.has(s.id)?'read':''}${s.id===lastRead?' just':''}" onclick="go('#/s/${s.id}')">
       ${MARK}
       <span class="txt">
         <span class="t">${s.title}</span>
@@ -733,6 +760,12 @@ function renderList(){
         <span class="m"><span class="place">${s.place}</span></span>
       </span>
     </button>`).join("");
+  lastRead = null;
+  if(!shizuka.matches){
+    $("#list").querySelectorAll(".card").forEach((el,i)=>{
+      el.style.animation = `ukabu .45s ease ${Math.min(i,7)*45}ms both`;
+    });
+  }
 }
 
 /* 絵図の朱の提灯ピン。竿の先端が、その話の場所を指す */
@@ -794,11 +827,46 @@ function renderStory(id){
   $("#st-body").classList.add("hidden");
 }
 
+/* 提灯に火が入る。その明かりの下で文字が浮かび上がる。
+   明かりが最も強い一瞬に中身を入れ替えるので、切り替わりが見えない */
+const shizuka = matchMedia("(prefers-reduced-motion: reduce)");
+
 function arrive(){
-  $("#st-gate").classList.add("hidden");
-  $("#st-body").classList.remove("hidden");
-  if(current) markRead(current.id);
-  $("#st-body").scrollIntoView({behavior:"smooth",block:"start"});
+  const gate = $("#st-gate"), body = $("#st-body");
+  if(current){ markRead(current.id); lastRead = current.id; }
+
+  if(shizuka.matches){                       /* 動きを抑える設定なら、そのまま出す */
+    gate.classList.add("hidden");
+    body.classList.remove("hidden");
+    body.scrollIntoView({block:"start"});
+    return;
+  }
+
+  const hi = document.createElement("div");
+  hi.className = "tomoshibi";
+  document.body.appendChild(hi);
+  setTimeout(()=>hi.remove(), 850);
+
+  gate.classList.add("out");
+  setTimeout(()=>{
+    gate.classList.add("hidden");
+    gate.classList.remove("out");
+    body.classList.remove("hidden");
+    /* 灯りが最も明るい瞬間に位置を合わせる。移動が見えない */
+    body.scrollIntoView({behavior:"instant", block:"start"});
+    ukabu(body);
+  }, 240);
+}
+
+/* 上から順に、一拍ずつ遅れて浮かび上がる。
+   遅れは6段までで頭打ち。長い話でも読み始めを待たせない */
+function ukabu(root){
+  const items = root.querySelectorAll(".sec, .story > p, .poembox, .look, .about, .btn");
+  items.forEach((el,i)=>{
+    el.style.animation = "none";
+    void el.offsetWidth;                     /* 2度目以降もやり直させる */
+    el.style.animation = `ukabu .5s ease ${Math.min(i,6)*70}ms both`;
+  });
 }
 
 function renderEnd(){
