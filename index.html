@@ -517,12 +517,18 @@ function paintFigures(){
    ── 徒歩分数・地図上の位置(x,y)・map_url は仮。現地で確定する
    ── 出典（採録元）は各話の src に確認のうえ記載する
    ══════════════════════════════════════════════════ */
-const G = q => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+/* GoogleMAPのリンク。
+   ll（緯度・経度）があれば、その一点に正確にピンが立つ。
+   無い場合は地名での検索になる ── 施設として登録されていない場所は当たらない。
+   夜に歩く商品なので、8か所すべて ll を埋めてから公開する。 */
+const gmap = s => s.ll
+  ? `https://www.google.com/maps/search/?api=1&query=${s.ll[0]},${s.ll[1]}`
+  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.q)}`;
 const SRC_TBD = "※この話は柳川に伝えられてきたものをもとに、夜のまち歩き用に再構成しています。採録元（文献・聞き取り先）は確認中です。";
 
 const STORIES = [
   { id:"01", title:"火が、町の上を飛んだ夜", category:"火の話",
-    place:"二宮神社", walk:6, read:2, x:52, y:22, map_url:G("柳川市 沖端北町 二宮神社"),
+    place:"二宮神社", walk:6, read:2, x:52, y:22, q:"柳川市 沖端北町 二宮神社", ll:null,
     teaser:[
       "沖端北町にある二宮神社には、\n蒲池鎮漣と、その弟・統安の霊が祀られていると伝えられています。",
       "この社では、かつて祭りの夜に、\n一つの不思議な火が現れたといいます。",
@@ -546,7 +552,7 @@ const STORIES = [
     src_type:"伝承", src:SRC_TBD },
 
   { id:"02", title:"松の枝に、耳がぶら下がる", category:"塚の話",
-    place:"耳塚地蔵", walk:11, read:2, x:22, y:38, map_url:G("柳川市 矢留本町 耳塚地蔵"),
+    place:"耳塚地蔵", walk:11, read:2, x:22, y:38, q:"柳川市 矢留本町 耳塚地蔵", ll:null,
     teaser:[
       "矢留本町の一角に、小さな地蔵堂があります。",
       "そのそばには、かつて一本の松がありました。",
@@ -570,7 +576,7 @@ const STORIES = [
 
   { id:"03", title:"この川は、血で赤く染まったという", subtitle:"イッサキの鼻／血さきのハナ",
     category:"川の話",
-    place:"長善寺西の川", walk:13, read:2, x:16, y:60, map_url:G("柳川市 長善寺"),
+    place:"長善寺西の川", walk:13, read:2, x:16, y:60, q:"柳川市 長善寺", ll:null,
     teaser:[
       "長善寺の西を流れる川の先は、\nかつて「イッサキの鼻」と呼ばれていました。",
       "別の呼び名は、「血さきのハナ」。",
@@ -592,7 +598,7 @@ const STORIES = [
     src_type:"伝承（地名の由来）", src:SRC_TBD },
 
   { id:"04", title:"金の精を斬ろうとした侍", category:"森の話",
-    place:"天神林", walk:14, read:3, x:30, y:76, map_url:G("柳川市 矢留小学校"),
+    place:"天神林", walk:14, read:3, x:30, y:76, q:"柳川市 矢留小学校", ll:null,
     teaser:[
       "矢留小学校の東に、\n天神林と呼ばれる小さな森があります。",
       "旧藩の頃、夜になると、この森から\n大名行列が現れたといいます。",
@@ -625,7 +631,7 @@ const STORIES = [
 
   { id:"05", title:"海の上に、いくつもの火が見える夜", subtitle:"有明海の不知火",
     category:"海の話",
-    place:"ポケットパーク", walk:4, read:3, x:66, y:52, map_url:G("柳川市 沖端 ポケットパーク"),
+    place:"ポケットパーク", walk:4, read:3, x:66, y:52, q:"柳川市 沖端 ポケットパーク", ll:null,
     teaser_h:"この場所から", story_h:"この水の先に伝わる話",
     teaser:[
       "目の前を流れる川は、\nこの先で、やがて有明海へとつながっています。",
@@ -664,7 +670,7 @@ const STORIES = [
 
   { id:"06", title:"しろが、吠え続けた理由", subtitle:"石が塔に伝わる話",
     category:"橋のたもとの話",
-    place:"御花裏・出会い橋付近", walk:5, read:3, x:58, y:36, map_url:G("柳川市 出会い橋 御花"),
+    place:"御花裏・出会い橋付近", walk:5, read:3, x:58, y:36, q:"柳川市 出会い橋 御花", ll:null,
     teaser_h:"この場所から", story_h:"柳川に伝わる話",
     teaser:[
       "この話が、出会い橋で起きたと伝わっているわけではありません。",
@@ -705,7 +711,7 @@ const STORIES = [
     src_type:"伝承（昔話）", src:SRC_TBD },
 
   { id:"07", title:"白秋が見ていた、もう一つの柳川", category:"詩人の話",
-    place:"北原白秋生家", walk:2, read:2, x:62, y:46, map_url:G("柳川市 沖端町55-1 北原白秋生家"),
+    place:"北原白秋生家", walk:2, read:2, x:62, y:46, q:"柳川市 沖端町55-1 北原白秋生家", ll:null,
     story_h:"この場所で読む言葉", poem:true,
     teaser:[
       "北原白秋は、この柳川に生まれ、\n水や舟、鳥、植物、光や音を、\n多くの言葉に残しました。",
@@ -726,7 +732,7 @@ const STORIES = [
     src_type:"詩", src:"※掲載する作品は選定中です。作品名・成立年・引用元（底本）は、公開までにここへ明記します。" },
 
   { id:"08", title:"言葉を、柳川の風景に返す", category:"詩人の話",
-    place:"白秋詩碑園", walk:3, read:2, x:64, y:56, map_url:G("柳川市 北原白秋詩碑苑"),
+    place:"白秋詩碑園", walk:3, read:2, x:64, y:56, q:"柳川市 北原白秋詩碑苑", ll:null,
     story_h:"今夜、最後に読む詩", poem:true,
     teaser:[
       "白秋生家で生まれた言葉は、\n詩となり、長い時間を越えて残りました。",
@@ -847,7 +853,7 @@ function renderStory(id){
   $("#st-meta").textContent = `${s.category}　${s.place}　案内所から徒歩約${s.walk}分`;
   $("#st-teaser-h").textContent = s.teaser_h || "この場所へ";
   $("#st-teaser").innerHTML = para(s.teaser);
-  $("#st-map").onclick = ()=>window.open(s.map_url,"_blank","noopener");
+  $("#st-map").onclick = ()=>window.open(gmap(s),"_blank","noopener");
   paintMap($("#st-mapview"), s.id);
   $("#st-story-h").textContent = s.story_h || "この場所に伝わる話";
   $("#st-story").innerHTML = (s.poem ? POEM_YET : "") + para(s.story);
