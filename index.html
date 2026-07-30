@@ -139,8 +139,11 @@ p{margin:0 0 1.35em}
   transform-origin:50% 0;animation:sway 9s ease-in-out infinite}
 .hangs .h1{left:-2%;top:-38px;width:56px}
 .hangs .h2{right:1%;top:22px;width:42px}
-.hangs .h3{left:19%;top:-22px;width:27px;opacity:.42}
-.hangs .h4{right:21%;top:-14px;width:23px;opacity:.32}
+.hangs .h3{left:19%;top:-22px;width:27px}
+.hangs .h4{right:21%;top:-14px;width:23px}
+/* 奥の2つは薄く。開幕の演出が opacity を使うので、薄さは img 側に持たせる */
+.hangs .h3 img{opacity:.42}
+.hangs .h4 img{opacity:.32}
 .hangs .h1 img{animation-duration:10.4s}
 .hangs .h2 img{animation-duration:8.2s;animation-delay:-3.5s}
 .hangs .h3 img{animation-duration:12s;animation-delay:-6s}
@@ -161,6 +164,23 @@ p{margin:0 0 1.35em}
   .tomoshibi{display:none}
   .hangs .h{transform:none}
 }
+
+/* ── 開幕 ──
+   真っ暗から、奥の提灯から順に火が入る。全部で1.85秒。触れば飛ばせる。
+   「提灯の火を、細くする」と対の動き。最初に灯るのを見ているから、
+   後から細くするボタンの意味が体で分かる。 */
+.maku{position:fixed;inset:0;z-index:50;background:#05090D;pointer-events:none;
+  animation:makuake .85s ease .30s forwards}
+@keyframes makuake{to{opacity:0}}
+
+body.hiraku .hangs .h{opacity:0;animation:hidane .6s ease both}
+body.hiraku .hangs .h4{animation-delay:.30s}
+body.hiraku .hangs .h3{animation-delay:.45s}
+body.hiraku .hangs .h2{animation-delay:.60s}
+body.hiraku .hangs .h1{animation-delay:.75s}
+@keyframes hidane{from{opacity:0;filter:brightness(.25)}to{opacity:1;filter:none}}
+body.hiraku #s1 .hero h1{animation:ukabu .65s ease .85s both}
+body.hiraku #s1 .hero-lead{animation:ukabu .60s ease 1.10s both}
 
 /* ── 提灯の火を、細くする ──
    「画面から目を離して」を、画面自身が実行する */
@@ -1082,11 +1102,36 @@ function yure(){
   }, {passive:true});
 }
 
+/* 開幕。QRを読んで開いたときの一度だけ。
+   歩いている途中でトップに戻るたびに待たされるのは苦痛なので、
+   セッションに一度だけ流す（端末やブラウザの保存期間に左右されない） */
+function hiraku(){
+  const h = location.hash;
+  if(shizuka.matches) return;
+  if(h && h !== "#/") return;                       /* 話のURLを直接開いた人には出さない */
+  if(sessionStorage.getItem("ayashii.hiraku")) return;
+  try { sessionStorage.setItem("ayashii.hiraku","1"); } catch(e){}
+
+  document.body.classList.add("hiraku");
+  const maku = document.createElement("div");
+  maku.className = "maku";
+  document.body.appendChild(maku);
+
+  const owaru = ()=>{
+    document.body.classList.remove("hiraku");
+    maku.remove();
+    removeEventListener("pointerdown", owaru);
+  };
+  addEventListener("pointerdown", owaru);
+  setTimeout(owaru, 1850);
+}
+
 addEventListener("hashchange",route);
 if(!DEV) $("#dev").remove();
 paintFigures();
 sora();
 yure();
+hiraku();
 route();
 </script>
 </body>
