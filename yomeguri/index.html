@@ -212,8 +212,11 @@ body.hiraku #s1 .hero-lead{animation:ukabu .60s ease 1.10s both}
 
 /* ── PR版（扉を閉めた版） ── */
 .kaihou{margin:0 0 26px}
-.badge-open{display:inline-block;background:var(--aka);color:var(--kinari);
-  font-size:10.5px;letter-spacing:.14em;padding:3px 8px 2px;border-radius:2px;margin-left:12px}
+/* .card .m span が色と字の大きさを持っているので、それより強く指定する
+   （弱いままだと札の文字が地の色になり、朱の上でほとんど読めない） */
+.card .m .badge-open{display:inline-block;background:var(--aka);color:#F3E7CF;
+  font-size:12px;letter-spacing:.16em;padding:5px 11px 4px;border-radius:2px;
+  margin-left:14px;white-space:nowrap}
 
 /* ── 今夜の一枚 ── */
 .ichimai{margin:36px 0 0}
