@@ -217,7 +217,6 @@ body.hiraku #s1 .hero-lead{animation:ukabu .60s ease 1.10s both}
   border-left:2px solid rgba(232,206,154,.42);padding:2px 0 2px 20px}
 
 /* ── PR版（扉を閉めた版） ── */
-.tozasu{font-size:19px;line-height:2.2;letter-spacing:.1em;color:var(--hi);margin:0 0 14px}
 .kaihou{margin:0 0 26px}
 .badge-open{display:inline-block;background:var(--aka);color:var(--kinari);
   font-size:10.5px;letter-spacing:.14em;padding:3px 8px 2px;border-radius:2px;margin-left:12px}
@@ -892,7 +891,11 @@ const MARK = `<span class="mark"><svg width="15" height="24" viewBox="0 0 20 30"
 let lastRead = null;   /* 直前に灯した話。一覧に戻ったとき一度だけ強く光らせる */
 
 function renderList(){
-  $("#list").innerHTML = STORIES.map(s=>`
+  /* PR版では、読める話をいちばん上に */
+  const list = PR
+    ? [STORIES.find(s=>s.id===OPEN_ID), ...STORIES.filter(s=>s.id!==OPEN_ID)]
+    : STORIES;
+  $("#list").innerHTML = list.map(s=>`
     <button class="card ${readSet.has(s.id)?'read':''}${s.id===lastRead?' just':''}" onclick="go('#/s/${s.id}')">
       ${MARK}
       <span class="txt">
@@ -971,7 +974,9 @@ const POEM_YET = `<div class="poembox"><p class="yet">
 
 let current=null;
 function renderStory(id){
-  const s = STORIES.find(v=>v.id===id); if(!s) return go("#/stories");
+  const s = STORIES.find(v=>v.id===id);
+  if(!s){ go("#/stories"); return false; }
+  if(PR && s.id !== OPEN_ID){ prLock(s); return false; }   /* 閉じている話は開かない */
   current=s;
   $("#st-title").textContent = s.title;
   $("#st-sub").textContent = s.subtitle || "";
@@ -989,9 +994,9 @@ function renderStory(id){
   $("#st-gate").classList.remove("hidden");
   $("#st-body").classList.add("hidden");
 
-  /* PR版：開放している話だけ最後まで読める。ほかは扉の前で止める */
+  /* PR版：開放している話だけ最後まで読める */
   if(PR){
-    $("#st-go").innerHTML = s.id === OPEN_ID ? `
+    $("#st-go").innerHTML = `
       <div class="kaihou">
         <span class="fuda">試し読み</span>
         <p class="sub" style="margin:16px 0 0">この話だけ、ここで最後まで読めます。<br>
@@ -1000,12 +1005,15 @@ function renderStory(id){
       <button class="btn btn-hi btn-2" onclick="arrive()">
         <span class="b1">この話を、ここで読む</span>
         <span class="b2">押すと、提灯に火が入ります</span>
-      </button>` : `
-      <p class="tozasu">この先は、その場所で。</p>
-      <p class="sub" style="margin:0">提灯を借りて、${s.place}に立ったときに読めます。</p>
-      <button class="btn btn-quiet" style="margin-top:26px" onclick="go('#/end')">提灯を借りるには</button>`;
+      </button>`;
   }
 }
+
+/* PR版で、閉じている話に触れたとき。
+   中身は一行も見せず、貸出の案内へ送る。
+   ただし「何を押したか」だけは受け止める（黙って飛ばすと不具合に見える） */
+let prAsked = null;
+function prLock(s){ prAsked = s; go("#/end"); }
 
 /* ══════════════════════════════════════════════════
    提灯の火を、細くする
@@ -1095,6 +1103,23 @@ function ukabu(root){
 }
 
 function renderEnd(){
+  if(PR){
+    /* 閉じている話に触れて来た人には、押した話の名前だけ受け止めて返す */
+    const mae = prAsked ? `
+      <p class="lead">「${prAsked.title}」は、<br>${prAsked.place}で読む話です。</p>` : "";
+    prAsked = null;
+    $("#pr-kashi").innerHTML = `
+      <h2><span class="fuda">提灯を借りるには</span></h2>
+      <div class="pad-s"></div>
+      ${mae}
+      <p class="lead">沖端観光案内所で、提灯をお貸しします。</p>
+      <p class="lead">提灯を受け取ると、<br>八つの話がすべて読めるようになります。</p>
+      ${KASHIDASHI}
+      <p class="tiny">お問合せ　（一社）柳川市観光協会<br>TEL 0944-88-9027</p>
+      <hr class="rule">`;
+    return;
+  }
+
   const t=STORIES.filter(s=>readSet.has(s.id)).map(s=>s.title);
   $("#end-list").innerHTML = t.length
     ? `<p class="sub" style="margin-top:26px">${t.map(x=>"　"+x).join("<br>")}</p>` : "";
@@ -1122,7 +1147,7 @@ function route(){
   else if(h==="#/how"){ show("s2"); }
   else if(h==="#/stories"){ renderList(); show("s3"); }
   else if(h==="#/map"){ paintMap($("#map"), null); resetMapCap(); show("s3b"); }
-  else if(h.startsWith("#/s/")){ renderStory(h.slice(4)); show("story"); }
+  else if(h.startsWith("#/s/")){ if(renderStory(h.slice(4)) !== false) show("story"); }
   else if(h==="#/end"){ renderEnd(); show("end"); }
   else if(h==="#/info"){ show("info"); }
   else { show("s1"); }
@@ -1192,15 +1217,6 @@ function prMode(){
     <p class="lead">何かが現れるわけではありません。<br>
     話を知ったあとの風景が、少し違って見える。それだけの体験です。</p>
     ${KASHIDASHI}
-    <hr class="rule">`;
-
-  $("#pr-kashi").innerHTML = `
-    <h2><span class="fuda">提灯を借りるには</span></h2>
-    <div class="pad-s"></div>
-    <p class="lead">沖端観光案内所で、提灯をお貸しします。</p>
-    <p class="lead">提灯を受け取ると、<br>八つの話がすべて読めるようになります。</p>
-    ${KASHIDASHI}
-    <p class="tiny">お問合せ　（一社）柳川市観光協会<br>TEL 0944-88-9027</p>
     <hr class="rule">`;
 
   $("#end-honpen").style.display = "none";
