@@ -597,13 +597,17 @@ const asset = n => IMG[n] || `assets/${n}.png`;
 const yokai = (kind, h) => {
   const f = YOKAI[kind], w = Math.round(h * f.w / f.h);
   const kage = asset(`yokai-${kind}-kage`), lamp = asset(`yokai-${kind}-lamp`);
+  /* loading="lazy" は付けない。
+     画像は埋め込み済みで小さく、必ず要るもの。遅延させると
+     画面が切り替わった直後に「壊れた画像」の枠が出ることがある。
+     万一読めなかったときは、枠を出さずに消す（影だけ残る） */
   return `<span class="yk" style="width:${w}px;height:${h}px">
     <span class="kage" style="-webkit-mask-image:url(${kage});mask-image:url(${kage})"></span>
-    <img src="${lamp}" alt="" loading="lazy"></span>`;
+    <img src="${lamp}" alt="" onerror="this.remove()"></span>`;
 };
 
 /* 吊り提灯（元データ）。抽出手順は assets/extract_chochin.py */
-const chochin = kind => `<img src="${asset('chochin-'+kind)}" alt="" loading="eager">`;
+const chochin = kind => `<img src="${asset('chochin-'+kind)}" alt="" onerror="this.remove()">`;
 
 function paintFigures(){
   const lanes=["w1","w2","w3","w4"], durs=[82,104,68,118];
